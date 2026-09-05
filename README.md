@@ -42,50 +42,50 @@ AuraReflect provides an empathetic, confidential sanctuary for personal introspe
 ```mermaid
 flowchart TD
     subgraph Client["Browser Client (React 19 + Vite)"]
-        UI[Immersive UI / Glassmorphism View]
-        AuthHook[Firebase Auth Client]
-        LocalStore[Local Authoritative Cache]
+        UI["Immersive UI & Glassmorphism View"]
+        AuthHook["Firebase Auth Client"]
+        LocalStore["Local Authoritative Cache"]
     end
 
     subgraph FirebaseCloud["Google Cloud Services"]
-        GAuth[Firebase Authentication\n(Google Sign-In)]
-        Firestore[(Cloud Firestore\nNative Mode)]
-        SecRules["firestore.rules\n(request.auth.uid == userId)"]
+        GAuth["Firebase Authentication<br/>(Google Sign-In)"]
+        Firestore[("Cloud Firestore<br/>Native Mode")]
+        SecRules["firestore.rules<br/>(request.auth.uid == userId)"]
     end
 
     subgraph CloudRun["Cloud Run Container (Express + Vite)"]
         Proxy["Express Server (:3000)"]
-        BodyLimits["25MB Payload Parser\n& Null-Safe Deserializer"]
-        QuotaLimiter["User Daily Quota Guard\n(In-Memory + Session)"]
-        GeminiLadder["Resilient Fallback Ladder\n(gemini-3.6-flash -> fallback)"]
+        BodyLimits["25MB Payload Parser<br/>& Null-Safe Deserializer"]
+        QuotaLimiter["User Daily Quota Guard<br/>(In-Memory & Session)"]
+        GeminiLadder["Resilient Fallback Ladder<br/>(gemini-3.6-flash to fallback)"]
     end
 
     subgraph GoogleGenAI["Google Gemini API"]
-        G36["gemini-3.6-flash (Primary)"]
-        G31["gemini-3.1-flash-lite (HA Fallback)"]
-        GLatest["gemini-flash-latest (Alias)"]
-        G37["gemini-3.7-flash (Reasoning)"]
+        G36["gemini-3.6-flash<br/>(Primary)"]
+        G31["gemini-3.1-flash-lite<br/>(HA Fallback)"]
+        GLatest["gemini-flash-latest<br/>(Dynamic Alias)"]
+        G37["gemini-3.7-flash<br/>(Deep Reasoning)"]
     end
 
     subgraph Secrets["Google Secret Manager"]
-        SM[(GEMINI_API_KEY)]
+        SM[("GEMINI_API_KEY")]
     end
 
-    UI -->|1. Sign in popup| GAuth
-    GAuth -->|2. Returns JWT & UID| AuthHook
-    AuthHook -->|3. Authenticated session| UI
+    UI -->|"1. Sign-in popup"| GAuth
+    GAuth -->|"2. Returns JWT & UID"| AuthHook
+    AuthHook -->|"3. Authenticated session"| UI
     
-    UI -->|4. Direct Read/Write| SecRules
+    UI -->|"4. Direct Read/Write"| SecRules
     SecRules --> Firestore
-    UI -.->|Guest Mode Fallback| LocalStore
+    UI -.->|"Guest Mode Fallback"| LocalStore
 
-    UI -->|5. POST /api/chat, /api/finalize-entry| Proxy
+    UI -->|"5. POST /api/chat, /api/finalize-entry"| Proxy
     Proxy --> BodyLimits --> QuotaLimiter --> GeminiLadder
-    SM -->|Secret Accessor IAM| GeminiLadder
+    SM -->|"Secret Accessor IAM"| GeminiLadder
     GeminiLadder --> G36
-    G36 -.->|On 429/503/fail| G31
-    G31 -.->|On fail| GLatest
-    GLatest -.->|On fail| G37
+    G36 -.->|"On 429 / 503 fallback"| G31
+    G31 -.->|"On failure fallback"| GLatest
+    GLatest -.->|"On failure fallback"| G37
 ```
 
 ### 2. User Reflection Session Lifecycle
@@ -94,12 +94,12 @@ flowchart TD
 sequenceDiagram
     autonumber
     actor User
-    participant Editor as EntryEditorView (UI)
-    participant Server as Express Server (/api)
+    participant Editor as EntryEditorView
+    participant Server as Express Server
     participant Gemini as Gemini AI Service
-    participant Firestore as Cloud Firestore (/users/{uid})
+    participant Firestore as Cloud Firestore
 
-    User->>Editor: Selects Guided Prompt or clicks "+ New Reflection"
+    User->>Editor: Selects Guided Prompt or clicks New Reflection
     Editor->>Firestore: Initializes entry shell metadata (draft)
     User->>Editor: Inputs thoughts (Text, Voice audio note, or Image)
     Editor->>Server: POST /api/chat (message, imageBase64, audioBase64, history)
@@ -109,12 +109,12 @@ sequenceDiagram
     Editor->>Firestore: Writes message to /messages/{msgId}
     Editor-->>User: Displays Aura's thoughtful reflection
 
-    User->>Editor: Clicks "Close & Summarize Reflection"
+    User->>Editor: Clicks Close & Summarize Reflection
     Editor->>Server: POST /api/finalize-entry (fullConversation history)
     Server->>Gemini: Synthesize Title, Summary, Tags, Mood Score (1-10), Key Takeaways
     Gemini-->>Server: Structured JSON Metadata
     Server-->>Editor: Finalized metadata payload
-    Editor->>Firestore: setDoc(/entries/{entryId}, {isClosed: true, moodScore, tags, ...})
+    Editor->>Firestore: setDoc(/entries/{entryId}, metadata)
     Editor-->>User: Celebratory Confetti + Opens EntryDetailView
 ```
 
@@ -122,23 +122,23 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    Start([User Opens AuraReflect]) --> CheckSession{Authenticated?}
+    Start(["User Opens AuraReflect"]) --> CheckSession{"Authenticated?"}
     
-    CheckSession -->|Google Sign-In| GoogleAuth[Firebase Auth Provider]
-    GoogleAuth -->|Success| UserSession[AppUser: Google UID]
-    UserSession --> SyncFirestore[Sync from Cloud Firestore: /users/UID/entries]
-    SyncFirestore --> CacheLocal[Update Local Cache Mirror]
-    CacheLocal --> Dash[Render Dashboard]
+    CheckSession -->|"Google Sign-In"| GoogleAuth["Firebase Auth Provider"]
+    GoogleAuth -->|"Success"| UserSession["AppUser: Google UID"]
+    UserSession --> SyncFirestore["Sync from Cloud Firestore: /users/UID/entries"]
+    SyncFirestore --> CacheLocal["Update Local Cache Mirror"]
+    CacheLocal --> Dash["Render Dashboard"]
 
-    CheckSession -->|Clicks Instant Guest Preview| GuestMode[AppUser: demo_guest_user]
-    GuestMode --> SeedLocal[Initialize Isolated Guest Local Storage]
+    CheckSession -->|"Clicks Instant Guest Preview"| GuestMode["AppUser: demo_guest_user"]
+    GuestMode --> SeedLocal["Initialize Isolated Guest Local Storage"]
     SeedLocal --> Dash
 
     subgraph Persistence["Storage Routing Guarantee"]
-        Dash --> Action{User Modifies Journal}
-        Action --> IsAuth{auth.currentUser && uid == user.uid?}
-        IsAuth -->|Yes| WriteCloud[Write to Cloud Firestore + Local Cache]
-        IsAuth -->|No (Guest Preview)| WriteLocalOnly[Write to Local Storage Only]
+        Dash --> Action{"User Modifies Journal"}
+        Action --> IsAuth{"auth.currentUser && uid == user.uid?"}
+        IsAuth -->|"Yes"| WriteCloud["Write to Cloud Firestore + Local Cache"]
+        IsAuth -->|"No - Guest Preview"| WriteLocalOnly["Write to Local Storage Only"]
     end
 ```
 
@@ -146,15 +146,15 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Req([API Request: /api/chat or /api/finalize-entry]) --> L1[1. gemini-3.6-flash\nPrimary Low-Latency Model]
-    L1 -->|Success (200)| Res([Return Response to Client])
-    L1 -->|Catch 429 / 500 / 503 / Timeout| L2[2. gemini-3.1-flash-lite\nHigh-Availability Fallback]
-    L2 -->|Success (200)| Res
-    L2 -->|Catch Error| L3[3. gemini-flash-latest\nDynamic Stability Alias]
-    L3 -->|Success (200)| Res
-    L3 -->|Catch Error| L4[4. gemini-3.7-flash\nDeep Reasoning Recovery]
-    L4 -->|Success (200)| Res
-    L4 -->|Exhausted| Err([Return 500 with Graceful Offline Advice])
+    Req(["API Request: /api/chat or /api/finalize-entry"]) --> L1["1. gemini-3.6-flash<br/>Primary Low-Latency Model"]
+    L1 -->|"Success (200)"| Res(["Return Response to Client"])
+    L1 -->|"Catch 429 / 500 / 503"| L2["2. gemini-3.1-flash-lite<br/>High-Availability Fallback"]
+    L2 -->|"Success (200)"| Res
+    L2 -->|"Catch Error"| L3["3. gemini-flash-latest<br/>Dynamic Stability Alias"]
+    L3 -->|"Success (200)"| Res
+    L3 -->|"Catch Error"| L4["4. gemini-3.7-flash<br/>Deep Reasoning Recovery"]
+    L4 -->|"Success (200)"| Res
+    L4 -->|"All Models Exhausted"| Err(["Return 500 with Graceful Offline Advice"])
 ```
 
 ---
