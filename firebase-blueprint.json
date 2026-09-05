@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "User journal reflection entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "tags": { "type": "array" },
+        "moodScore": { "type": "number" },
+        "moodLabel": { "type": "string" },
+        "keyTakeaways": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "isClosed": { "type": "boolean" },
+        "messagesCount": { "type": "number" },
+        "guidedPromptTitle": { "type": "string" }
+      },
+      "required": ["id", "userId", "createdAt"]
+    },
+    "JournalMessage": {
+      "title": "JournalMessage",
+      "description": "A conversational turn in a journal reflection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "imageBase64": { "type": "string" },
+        "imageMimeType": { "type": "string" },
+        "hasAudio": { "type": "boolean" },
+        "audioDurationSeconds": { "type": "number" }
+      },
+      "required": ["id", "role", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/entries/{entryId}": {
+      "schema": "JournalEntry",
+      "description": "User journal entries"
+    },
+    "/users/{userId}/entries/{entryId}/messages/{messageId}": {
+      "schema": "JournalMessage",
+      "description": "Messages inside a journal reflection"
+    }
+  }
+}
